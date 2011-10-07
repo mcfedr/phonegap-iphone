@@ -233,42 +233,17 @@
 			result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [data base64EncodedString]];
 			jsString = [result toSuccessCallbackString:callbackId];
 		}
-    } else if([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
-        NSLog(@"got a movie");
+		
+	} else if([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
         NSString* jsString = NULL;
 		PluginResult* result = nil;
 		
         NSURL *movie = [info objectForKey:UIImagePickerControllerMediaURL];
         
         if (self.pickerController.returnType == DestinationTypeFileUri){
-			NSLog(@"uri %@", movie);
-			// write to temp directory and reutrn URI
-			// get the temp directory path
-			NSString* docsPath = [NSTemporaryDirectory() stringByStandardizingPath];
-			NSError* err = nil;
-			NSFileManager* fileMgr = [[NSFileManager alloc] init]; //recommended by apple (vs [NSFileManager defaultManager]) to be theadsafe
-			
-			// generate unique file name
-			NSString* filePath;
-			int i=1;
-			do {
-				filePath = [NSString stringWithFormat:@"%@/video_%03d.%@", docsPath, i++, @"mp4"];
-			} while([fileMgr fileExistsAtPath: filePath]);
-            
-            NSURL* filePathURL = [NSURL fileURLWithPath:filePath];
-            NSLog(@"file url %@", filePathURL);
-            
-            // save file
-			if (![fileMgr copyItemAtURL:movie toURL:filePathURL error:&err]){
-                NSLog(@"copy failed");
-				result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [err localizedDescription]];
-				jsString = [result toErrorCallbackString:callbackId];
-			}else{
-                NSLog(@"copied");
-				result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [filePathURL absoluteString]];
-				jsString = [result toSuccessCallbackString:callbackId];
-			}
-			[fileMgr release];
+            NSString *moviePath = [[info objectForKey: UIImagePickerControllerMediaURL] absoluteString];
+            result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: moviePath];
+            jsString = [result toSuccessCallbackString:callbackId];
 			
 		}else{
             NSLog(@"data");
