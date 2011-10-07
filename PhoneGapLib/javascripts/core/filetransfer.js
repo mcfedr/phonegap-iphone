@@ -30,6 +30,10 @@ FileTransferError = function(errorCode) {
     this.code = errorCode || null;
 }
 
+FileTransferProgress = function(percent) {
+	this.percent = percent;
+}
+
 FileTransferError.FILE_NOT_FOUND_ERR = 1;
 FileTransferError.INVALID_URL_ERR = 2;
 FileTransferError.CONNECTION_ERR = 3;
@@ -59,6 +63,18 @@ FileTransfer.prototype.upload = function(filePath, server, successCallback, erro
 		options.mimeType = 'image/jpeg';
 	}
 	
+	if(options.progressCallback) {
+		if(typeof options.progressCallback != "function") {
+			console.log("FileTransfer Error: progressCallback is not a function");
+	        return;
+		}
+		else {
+			var callbackId = 'com.phonegap.filetransfer.progress' + PhoneGap.callbackId++;
+			PhoneGap.callbacks[callbackId] = {success:options.progressCallback, fail:function() {}}
+			options.progressCallback = callbackId;
+		}
+	}
+	
 	// successCallback required
 	if (typeof successCallback != "function") {
         console.log("FileTransfer Error: successCallback is not a function");
@@ -71,6 +87,8 @@ FileTransfer.prototype.upload = function(filePath, server, successCallback, erro
         console.log("FileTransfer Error: errorCallback is not a function");
         return;
     }
+
+	
 	
     PhoneGap.exec(successCallback, errorCallback, 'com.phonegap.filetransfer', 'upload', [options]);
 };
@@ -91,6 +109,12 @@ FileTransfer.prototype._castUploadResult = function(pluginResult) {
 	return pluginResult;
 }
 
+FileTransfer.prototype._castProgress = function(pluginResult) {
+	var result = new FileTransferProgress(pluginResult.message.percent);
+	pluginResult.message = result;
+	return pluginResult;
+}
+
 /**
  * Options to customize the HTTP request used to upload files.
  * @param fileKey {String}   Name of file request parameter.
@@ -98,11 +122,12 @@ FileTransfer.prototype._castUploadResult = function(pluginResult) {
  * @param mimeType {String}  Mimetype of the uploaded file. Defaults to image/jpeg.
  * @param params {Object}    Object with key: value params to send to the server.
  */
-FileUploadOptions = function(fileKey, fileName, mimeType, params) {
+FileUploadOptions = function(fileKey, fileName, mimeType, params, progressCallback) {
     this.fileKey = fileKey || null;
     this.fileName = fileName || null;
     this.mimeType = mimeType || null;
     this.params = params || null;
+	this.progressCallback = progressCallback || null;
 }
 
 
