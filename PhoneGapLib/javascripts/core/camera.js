@@ -89,6 +89,54 @@ Camera.prototype.getPicture = function(successCallback, errorCallback, options) 
 	PhoneGap.exec(successCallback, errorCallback, "com.phonegap.camera","getPicture",[options]);
 };
 
+Camera.prototype.getVideo = function(successCallback, errorCallback, options) {
+	// successCallback required
+	if (typeof successCallback != "function") {
+        console.log("Camera Error: successCallback is not a function");
+        return;
+    }
+
+    // errorCallback optional
+    if (errorCallback && (typeof errorCallback != "function")) {
+        console.log("Camera Error: errorCallback is not a function");
+        return;
+    }
+	
+	PhoneGap.exec(successCallback, errorCallback, "com.phonegap.camera","getVideo",[options]);
+};
+
+Camera.prototype.getAudio = function(successCallback, errorCallback, options) {
+	// successCallback required
+	if (typeof successCallback != "function") {
+        console.log("Camera Error: successCallback is not a function");
+        return;
+    }
+
+    // errorCallback optional
+    if (errorCallback && (typeof errorCallback != "function")) {
+        console.log("Camera Error: errorCallback is not a function");
+        return;
+    }
+	
+	PhoneGap.exec(successCallback, errorCallback, "com.phonegap.camera","getAudio",[options]);
+};
+
+Camera.prototype.getMedia = function(successCallback, errorCallback, options) {
+	// successCallback required
+	if (typeof successCallback != "function") {
+        console.log("Camera Error: successCallback is not a function");
+        return;
+    }
+
+    // errorCallback optional
+    if (errorCallback && (typeof errorCallback != "function")) {
+        console.log("Camera Error: errorCallback is not a function");
+        return;
+    }
+	
+	PhoneGap.exec(successCallback, errorCallback, "com.phonegap.camera","getMedia",[options]);
+};
+
 
 
 PhoneGap.addConstructor(function() {

@@ -70,6 +70,8 @@ typedef NSUInteger EncodingType;
  *	quality: integer between 1 and 100
  */
 - (void) getPicture:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
+- (void) getVideo:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
+- (void) getAudio:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
 - (void) postImage:(UIImage*)anImage withFilename:(NSString*)filename toUrl:(NSURL*)url;
 
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info;
