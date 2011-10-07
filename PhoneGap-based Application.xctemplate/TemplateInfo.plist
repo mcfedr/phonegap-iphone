@@ -316,6 +316,8 @@
 				<string>SystemConfiguration</string>
 				<string>MobileCoreServices</string>
 				<string>CoreMedia</string>
+				<string>CFNetwork</string>
+				<string>libz.dylib</string>
 			</array>
 			<key>Name</key>
 			<string>___PACKAGENAME___</string>
