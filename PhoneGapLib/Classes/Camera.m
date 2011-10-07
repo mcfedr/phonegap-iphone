@@ -24,7 +24,7 @@
 	(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
 }
 
-- (void) getPicture:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options
+- (void) getMedia:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options
 {
 	NSString* callbackId = [arguments objectAtIndex:0];
 	
@@ -42,65 +42,113 @@
         [self writeJavascript:[result toErrorCallbackString:callbackId]];
         
 	} else {
-        bool allowEdit = [[options valueForKey:@"allowEdit"] boolValue];
-        NSNumber* targetWidth = [options valueForKey:@"targetWidth"];
-        NSNumber* targetHeight = [options valueForKey:@"targetHeight"];
-        NSNumber* mediaValue = [options valueForKey:@"mediaType"];
-        MediaType mediaType = (mediaValue) ? [mediaValue intValue] : MediaTypePicture;
-        
-        CGSize targetSize = CGSizeMake(0, 0);
-        if (targetWidth != nil && targetHeight != nil) {
-            targetSize = CGSizeMake([targetWidth floatValue], [targetHeight floatValue]);
-        }
-        
-        
-        if (self.pickerController == nil) 
-        {
-            self.pickerController = [[[CameraPicker alloc] init] autorelease];
-        }
-        
-        self.pickerController.delegate = self;
-        self.pickerController.sourceType = sourceType;
-        self.pickerController.allowsEditing = allowEdit; // THIS IS ALL IT TAKES FOR CROPPING - jm
-        self.pickerController.callbackId = callbackId;
-        self.pickerController.targetSize = targetSize;
-        self.pickerController.correctOrientation = [[options valueForKey:@"correctOrientation"] boolValue];
-        self.pickerController.saveToPhotoAlbum = [[options valueForKey:@"saveToPhotoAlbum"] boolValue];
-        self.pickerController.encodingType = [[options valueForKey:@"encodingType"] intValue] || EncodingTypeJPEG;
-        
-        self.pickerController.quality = [options integerValueForKey:@"quality" defaultValue:100 withRange:NSMakeRange(0, 100)];
-        self.pickerController.returnType = (DestinationType)[options integerValueForKey:@"destinationType" defaultValue:0 withRange:NSMakeRange(0, 2)];
-       
-        if (sourceType == UIImagePickerControllerSourceTypeCamera) {
-            // we only allow taking pictures (no video) in this api
-            self.pickerController.mediaTypes = [NSArray arrayWithObjects: (NSString*) kUTTypeImage, nil];
-        } else if (mediaType == MediaTypeAll) {
-            self.pickerController.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType: sourceType];
+        NSArray *mediaTypesConf = [options valueForKey:@"mediaTypes"];
+        NSMutableArray *mediaTypes;
+        if(mediaTypesConf != nil) {
+            mediaTypes = [NSMutableArray array];
+            for (NSString *type in mediaTypesConf) {
+                if([type isEqual:@"video"]) {
+                    [mediaTypes addObject:(NSString *) kUTTypeMovie];
+                }
+                else if([type isEqual:@"picture"]) {
+                    [mediaTypes addObject:(NSString *) kUTTypeImage];
+                }
+                // iOS doesnt support audio choosing, which is a shame...
+                //else if([type isEqual:@"audio"]) {
+                //    [mediaTypes addObject:(NSString *) kUTTypeAudio];
+                //}
+            }
         } else {
-            NSArray* mediaArray = [NSArray arrayWithObjects: (NSString*) (mediaType == MediaTypeVideo ? kUTTypeMovie : kUTTypeImage), nil];
-            self.pickerController.mediaTypes = mediaArray;
-            
+            mediaTypes = [NSArray arrayWithObject:(NSString *) kUTTypeImage];
         }
         
-        if([self popoverSupported] && sourceType != UIImagePickerControllerSourceTypeCamera)
-        {
-            if (self.pickerController.popoverController == nil) 
-            { 
-                self.pickerController.popoverController = [[[NSClassFromString(@"UIPopoverController") alloc] 
-                                                           initWithContentViewController:self.pickerController] autorelease]; 
-            } 
-            self.pickerController.popoverController.delegate = self;
-            [ self.pickerController.popoverController presentPopoverFromRect:CGRectMake(0,32,320,480)
-                                                                      inView:[self.webView superview]
-                                                    permittedArrowDirections:UIPopoverArrowDirectionAny 
-                                                                    animated:YES]; 
+        bool mediaSupported = true;
+        NSArray *supportedTypes = [UIImagePickerController availableMediaTypesForSourceType:sourceType];
+        
+
+        for (id type in mediaTypes) {
+            if(![supportedTypes containsObject:type]) {
+                mediaSupported = false;
+                break;
+            }
         }
-        else 
-        { 
-            [[super appViewController] 
-             presentModalViewController:self.pickerController animated:YES]; 
+        
+        if(!mediaSupported) {
+            NSLog(@"Camera.getMedia: media types %@ not available. Only %@ are avaiable", mediaTypes, supportedTypes);
+            PluginResult* result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: @"media type not availiable"];
+            [self writeJavascript:[result toErrorCallbackString:callbackId]];
+            
+        } else {
+        
+            bool allowEdit = [[options valueForKey:@"allowEdit"] boolValue];
+            NSNumber* targetWidth = [options valueForKey:@"targetWidth"];
+            NSNumber* targetHeight = [options valueForKey:@"targetHeight"];
+            
+            CGSize targetSize = CGSizeMake(0, 0);
+            if (targetWidth != nil && targetHeight != nil) {
+                targetSize = CGSizeMake([targetWidth floatValue], [targetHeight floatValue]);
+            }
+            
+            
+            if (self.pickerController == nil) 
+            {
+                self.pickerController = [[CameraPicker alloc] init];
+            }
+            
+            self.pickerController.delegate = self;
+            self.pickerController.sourceType = sourceType;
+            self.pickerController.mediaTypes = mediaTypes;
+            self.pickerController.allowsEditing = allowEdit; // THIS IS ALL IT TAKES FOR CROPPING - jm
+            self.pickerController.callbackId = callbackId;
+            self.pickerController.targetSize = targetSize;
+            self.pickerController.correctOrientation = [[options valueForKey:@"correctOrientation"] boolValue];
+            self.pickerController.saveToPhotoAlbum = [[options valueForKey:@"saveToPhotoAlbum"] boolValue];
+            self.pickerController.encodingType = [[options valueForKey:@"encodingType"] intValue] || EncodingTypeJPEG;
+            
+            self.pickerController.quality = [options integerValueForKey:@"quality" defaultValue:100 withRange:NSMakeRange(0, 100)];
+            self.pickerController.returnType = (DestinationType)[options integerValueForKey:@"destinationType" defaultValue:0 withRange:NSMakeRange(0, 2)];
+            
+            if([self popoverSupported] && sourceType != UIImagePickerControllerSourceTypeCamera)
+            {
+                if (self.pickerController.popoverController == nil) 
+                { 
+                    self.pickerController.popoverController = [[NSClassFromString(@"UIPopoverController") alloc] 
+                                                               initWithContentViewController:self.pickerController]; 
+                } 
+                self.pickerController.popoverController.delegate = self;
+                [ self.pickerController.popoverController presentPopoverFromRect:CGRectMake(0,32,320,480)
+                                                                          inView:[self.webView superview]
+                                                        permittedArrowDirections:UIPopoverArrowDirectionAny 
+                                                                        animated:YES]; 
+            }
+            else 
+            { 
+
+                [[super appViewController] 
+                 presentModalViewController:self.pickerController animated:YES]; 
+            }
         }
     }
+}
+
+- (void) getPicture:(NSMutableArray *)arguments withDict:(NSMutableDictionary *)options
+{
+    [options setValue:[NSArray arrayWithObject:@"picture"] forKey:@"mediaTypes"];
+    [self getMedia:arguments withDict:options];
+}
+
+- (void) getVideo:(NSMutableArray *)arguments withDict:(NSMutableDictionary *)options
+{
+    [options setValue:[NSArray arrayWithObject:@"video"] forKey:@"mediaTypes"];
+    [self getMedia:arguments withDict:options];
+}
+
+- (void) getAudio:(NSMutableArray *)arguments withDict:(NSMutableDictionary *)options
+{
+    NSLog(@"Camera.getAudio: media types \"audio\" not available");
+    PluginResult* result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: @"media type not availiable"];
+    NSString* callbackId = [arguments objectAtIndex:0];
+    [self writeJavascript:[result toErrorCallbackString:callbackId]];
 }
 
 
@@ -130,9 +178,6 @@
 	NSString* mediaType = [info objectForKey:UIImagePickerControllerMediaType];
 	if ([mediaType isEqualToString:(NSString*)kUTTypeImage])
 	{
-		
-		
-		
 		// get the image
 		UIImage* image = nil;
 		if (self.pickerController.allowsEditing && [info objectForKey:UIImagePickerControllerEditedImage]){
@@ -188,16 +233,52 @@
 			result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [data base64EncodedString]];
 			jsString = [result toSuccessCallbackString:callbackId];
 		}
+    } else if([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
+        NSLog(@"got a movie");
+        NSString* jsString = NULL;
+		PluginResult* result = nil;
 		
-		
-	} else {
-        // was movie type
-         NSString *moviePath = [[info objectForKey: UIImagePickerControllerMediaURL] absoluteString];
-        result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: moviePath];
-        jsString = [result toSuccessCallbackString:callbackId];
+        NSURL *movie = [info objectForKey:UIImagePickerControllerMediaURL];
         
+        if (self.pickerController.returnType == DestinationTypeFileUri){
+			NSLog(@"uri %@", movie);
+			// write to temp directory and reutrn URI
+			// get the temp directory path
+			NSString* docsPath = [NSTemporaryDirectory() stringByStandardizingPath];
+			NSError* err = nil;
+			NSFileManager* fileMgr = [[NSFileManager alloc] init]; //recommended by apple (vs [NSFileManager defaultManager]) to be theadsafe
+			
+			// generate unique file name
+			NSString* filePath;
+			int i=1;
+			do {
+				filePath = [NSString stringWithFormat:@"%@/video_%03d.%@", docsPath, i++, @"mp4"];
+			} while([fileMgr fileExistsAtPath: filePath]);
+            
+            NSURL* filePathURL = [NSURL fileURLWithPath:filePath];
+            NSLog(@"file url %@", filePathURL);
+            
+            // save file
+			if (![fileMgr copyItemAtURL:movie toURL:filePathURL error:&err]){
+                NSLog(@"copy failed");
+				result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [err localizedDescription]];
+				jsString = [result toErrorCallbackString:callbackId];
+			}else{
+                NSLog(@"copied");
+				result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [filePathURL absoluteString]];
+				jsString = [result toSuccessCallbackString:callbackId];
+			}
+			[fileMgr release];
+			
+		}else{
+            NSLog(@"data");
+            NSData *data = [NSData dataWithContentsOfURL:movie];
+			result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsString: [data base64EncodedString]];
+			jsString = [result toSuccessCallbackString:callbackId];
+		}
     }
-    if (jsString) {
+    
+    if(jsString) {
         [self.webView stringByEvaluatingJavaScriptFromString:jsString];
     }
 	
