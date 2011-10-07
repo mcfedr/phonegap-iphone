@@ -69,6 +69,7 @@ typedef NSUInteger EncodingType;
  * options:
  *	quality: integer between 1 and 100
  */
+- (void) getMedia:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
 - (void) getPicture:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
 - (void) getVideo:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
 - (void) getAudio:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options;
