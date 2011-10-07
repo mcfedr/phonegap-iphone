@@ -10,6 +10,7 @@
 
 #import <Foundation/Foundation.h>
 #import "PGPlugin.h"
+#import "ASIHTTPRequestDelegate.h"
 
 enum FileTransferError {
 	FILE_NOT_FOUND_ERR = 1,
@@ -26,9 +27,10 @@ typedef int FileTransferError;
 @end
 
 
-@interface FileTransferDelegate : NSObject {
+@interface FileTransferDelegate : NSObject <ASIHTTPRequestDelegate> {
 	PGFileTransfer* command;
 	NSString* callbackId;
+    NSString* progressCallback;
     NSInteger bytesWritten;
     
 }
@@ -36,6 +38,7 @@ typedef int FileTransferError;
 @property (nonatomic, retain) NSMutableData* responseData;
 @property (nonatomic, retain) PGFileTransfer* command;
 @property (nonatomic, retain) NSString* callbackId;
+@property (nonatomic, retain) NSString* progressCallback;
 @property NSInteger bytesWritten;
 
 
