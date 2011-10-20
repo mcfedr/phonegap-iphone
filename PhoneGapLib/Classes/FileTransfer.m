@@ -113,6 +113,7 @@
     delegate.callbackId = callbackId;
     delegate.progressCallback = progressCallback;
     
+    request.timeOutSeconds = 60;
     [request setDelegate:delegate];
     request.showAccurateProgress = YES;
     [request setUploadProgressDelegate:delegate];
@@ -139,6 +140,13 @@
 
 - (void)requestFinished:(ASIHTTPRequest *)request
 {
+    if(self.progressCallback != nil) {
+        NSMutableDictionary* uploadResult = [NSMutableDictionary dictionaryWithCapacity:1];
+        [uploadResult setObject:[NSNumber numberWithFloat:(100)] forKey:@"percent"];
+        PluginResult* result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsDictionary: uploadResult cast: @"navigator.fileTransfer._castProgress"];
+        [command writeJavascript:[result toSuccessCallbackString: self.progressCallback]];
+        self.progressCallback = nil;
+    }
     
     // Use when fetching text data
     NSString *responseString = [request responseString];
@@ -155,6 +163,14 @@
 - (void)requestFailed:(ASIHTTPRequest *)request
 {
     
+    if(self.progressCallback != nil) {
+        NSMutableDictionary* uploadResult = [NSMutableDictionary dictionaryWithCapacity:1];
+        [uploadResult setObject:[NSNumber numberWithFloat:(0)] forKey:@"percent"];
+        PluginResult* result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsDictionary: uploadResult cast: @"navigator.fileTransfer._castProgress"];
+        [command writeJavascript:[result toSuccessCallbackString: self.progressCallback]];
+        self.progressCallback = nil;
+    }
+    
     NSError *error = [request error];
     PluginResult* result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsInt: CONNECTION_ERR cast: @"navigator.fileTransfer._castTransferError"];
     NSLog(@"File Transfer Error: %@", [error localizedDescription]);
@@ -167,6 +183,7 @@
         NSMutableDictionary* uploadResult = [NSMutableDictionary dictionaryWithCapacity:1];
         [uploadResult setObject:[NSNumber numberWithFloat:(newProgress * 100)] forKey:@"percent"];
         PluginResult* result = [PluginResult resultWithStatus: PGCommandStatus_OK messageAsDictionary: uploadResult cast: @"navigator.fileTransfer._castProgress"];
+        result.keepCallback = [NSNumber numberWithBool:YES];
         [command writeJavascript:[result toSuccessCallbackString: self.progressCallback]];
     }
 }
